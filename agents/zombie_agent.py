@@ -19,11 +19,11 @@ class ZombieAgent(Agent):
         if not self.is_active:
             return
         
-        # Verzamel informatie uit de omgeving
+        # SENSE: Verzamel informatie uit de omgeving
         humans_to_infect = env.get_nearby_humans(self.position, self.infection_radius)
         humans_to_chase = env.get_nearby_humans(self.position, self.detection_radius)
 
-        # Bepaal de nieuwe status op basis van de observaties
+        # THINK: Bepaal de nieuwe status op basis van de observaties
         if humans_to_infect:
             self.state = ZombieState.INFECTING
             target_human = env.rng.choice(humans_to_infect)
