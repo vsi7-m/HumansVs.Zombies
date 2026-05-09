@@ -41,7 +41,7 @@ class Agent:
         dx = self.position[0] - threat_position[0]
         dy = self.position[1] - threat_position[1]
         
-        # Exact dezelfde wiskunde als bij move_towards
+        # Exact hetzelfde als bij move_towards
         step_x = int(np.sign(dx) * min(self.speed, abs(dx))) if dx != 0 else 0
         step_y = int(np.sign(dy) * min(self.speed, abs(dy))) if dy != 0 else 0
             

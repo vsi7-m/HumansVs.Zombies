@@ -134,7 +134,7 @@ class HumanAgent(Agent):
                     continue
                 
                 # Een kleine random kans moet slagen
-                if env.rng.random() < self.betrayal_probability:
+                if env.rng.random() <= self.betrayal_probability:
                     
                     # VERRAAD SLAAGT!
                     # Slachtoffer wordt fysiek richting de zombie geduwd

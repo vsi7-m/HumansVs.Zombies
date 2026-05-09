@@ -34,7 +34,7 @@ class ZombieAgent(Agent):
             self.state = ZombieState.WANDERING
             target_human = None
 
-        # ACT: Voer de actie uit die bij de status hoort
+        # Voer de actie uit die bij de status hoort
         if self.state == ZombieState.INFECTING:
             self.start_infection(target_human, env)
         elif self.state == ZombieState.CHASING:
