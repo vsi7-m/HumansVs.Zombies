@@ -37,9 +37,11 @@ class HumanAgent(Agent):
             self.infection_timer -= 1
             if self.infection_timer <= 0:
                 if env.rng.random() < self.p_zombification:
+                    print("TRANSFORMATIE")
                     env.convert_to_zombie(self)
                     return # De human is nu een zombie
                 else:
+                    print("HERSTEL")
                     self.infected = False
 
         # SENSE
@@ -103,7 +105,7 @@ class HumanAgent(Agent):
 
     def flee_or_betray(self, visible_zombies, nearby_humans, env):
         """
-        Vlucht weg van het gevaar, of verraad een ander tijdens paniek om zelf te overleven.
+        Vlucht weg van het gevaar of verraad een ander tijdens paniek om zelf te overleven.
         """
         flee_from_position = None
         zombie_is_close = len(visible_zombies) > 0
@@ -137,13 +139,14 @@ class HumanAgent(Agent):
                 if env.rng.random() <= self.betrayal_probability:
                     
                     # VERRAAD SLAAGT!
-                    # Slachtoffer wordt fysiek richting de zombie geduwd
+                    # Slachtoffer wordt richting de zombie geduwd
+                    print("VERRAAD")
                     victim.move_towards(flee_from_position, env)
                     self.move_away_from(flee_from_position, env)
                     
                     return # Actie is uitgevoerd, stop met zoeken naar slachtoffers
 
-        self.move_away_from(flee_from_position, env) # vluchten wanneer verraad niet lukt
+        self.move_away_from(flee_from_position, env) # Vlucht wanneer verraad niet lukt
 
     def move_to_group_center(self, env):
         """
@@ -162,16 +165,3 @@ class HumanAgent(Agent):
         center_y = int(round(total_y / total_people))
         group_center = [center_x, center_y]
         self.move_towards(group_center, env)
-
-    def process_infection(self, env):
-        """
-        Beheert het infectieproces.
-        """
-        if self.infected:
-            self.infection_timer -= 1
-            
-            if self.infection_timer <= 0:
-                if env.rng.random() < self.p_zombification:
-                    env.convert_to_zombie(self)
-                else:
-                    self.infected = False

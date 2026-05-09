@@ -73,6 +73,6 @@ class Agent:
     def step(self, env):
         """
         De actie die de agent elke tick uitvoert.
-        Deze moet specifiek door de subklassen (Zombie/Human) worden overschreven.
+        Deze moet door de subklassen worden overschreven.
         """
-        raise NotImplementedError("Subklassen moeten de step() methode implementeren!")
+        raise NotImplementedError("Subklassen moeten de step() methode implementeren")

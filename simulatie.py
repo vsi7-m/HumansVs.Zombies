@@ -2,7 +2,7 @@ from zombie_environment import ZombieEnvironment
 from agents.zombie_agent import ZombieAgent
 from agents.human_agent import HumanAgent
 
-def run_simulation(ticks=100, n_humans=20, n_zombies=2, seed=42):
+def run_simulation(ticks=100, n_humans=20, n_zombies=1, seed=42):
     """
     Runt een volledige simulatie van Zombie vs. Humans.
     """

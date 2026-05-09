@@ -36,15 +36,13 @@ class ZombieAgent(Agent):
 
         # Voer de actie uit die bij de status hoort
         if self.state == ZombieState.INFECTING:
-            self.start_infection(target_human, env)
+            if not target_human.infected:
+                target_human.infected = True
+                target_human.infection_timer = env.rng.integers(2, 5) # timer wordt random ingesteld op 2 tot 4 ticks
+                print("INFECTIE")
         elif self.state == ZombieState.CHASING:
             self.move_towards(target_human.position, env)
         elif self.state == ZombieState.WANDERING:
             self.random_move(env)
-
-    def start_infection(self, human, env):
-        """Start het vertraagde infectieproces."""
-        if not human.infected:
-            human.infected = True
-            human.infection_timer = env.rng.integers(2, 5) # timer wordt random ingesteld op 2 tot 4 ticks
+        
     
