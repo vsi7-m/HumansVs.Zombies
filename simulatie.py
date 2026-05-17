@@ -127,4 +127,4 @@ if __name__ == "__main__":
     run_visual_simulation(ticks=50, n_humans=30, n_zombies=2, seed=42)
 
     # OPTIE 2: geen visualisatie
-    #experiment_data = run_simulation(ticks=100, n_humans=30, n_zombies=2, seed=42)
+    #experiment_data = run_simulation(ticks=50, n_humans=30, n_zombies=2, seed=42)

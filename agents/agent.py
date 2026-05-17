@@ -13,43 +13,27 @@ class Agent:
 
     def move_towards(self, target_position, env):
         """Beweeg in de richting van een specifiek coördinaat."""
-        dx = target_position[0] - self.position[0]
-        dy = target_position[1] - self.position[1]
+        dx = 0
+        if target_position[0] > self.position[0]: dx = self.speed
+        elif target_position[0] < self.position[0]: dx = -self.speed
         
-        # We bepalen de stapgrootte. np.sign geeft -1, 0 of 1, 
-        # vermenigvuldigd met de snelheid geeft dit de maximale toegestane stap.
-        # We gebruiken min() en max() om niet voorbij het doelwit te schieten.
-        if dx != 0:
-            step_x = int(np.sign(dx) * min(self.speed, abs(dx)))
-        else:
-            step_x = 0
-            
-        if dy != 0:
-            step_y = int(np.sign(dy) * min(self.speed, abs(dy)))
-        else:
-            step_y = 0
-            
-        new_x = self.position[0] + step_x
-        new_y = self.position[1] + step_y
+        dy = 0
+        if target_position[1] > self.position[1]: dy = self.speed
+        elif target_position[1] < self.position[1]: dy = -self.speed
         
-        if env.is_valid_position(new_x, new_y):
-            self.position = [new_x, new_y]
+        self.attempt_move(dx, dy, env)
 
     def move_away_from(self, threat_position, env):
         """Beweegt de agent weg van een coördinaat (zoals een zombie)."""
-        # Door self - threat te doen, draaien we de richting om
-        dx = self.position[0] - threat_position[0]
-        dy = self.position[1] - threat_position[1]
+        dx = 0
+        if threat_position[0] > self.position[0]: dx = -self.speed
+        elif threat_position[0] < self.position[0]: dx = self.speed
         
-        # Exact hetzelfde als bij move_towards
-        step_x = int(np.sign(dx) * min(self.speed, abs(dx))) if dx != 0 else 0
-        step_y = int(np.sign(dy) * min(self.speed, abs(dy))) if dy != 0 else 0
-            
-        new_x = self.position[0] + step_x
-        new_y = self.position[1] + step_y
+        dy = 0
+        if threat_position[1] > self.position[1]: dy = -self.speed
+        elif threat_position[1] < self.position[1]: dy = self.speed
         
-        if env.is_valid_position(new_x, new_y):
-            self.position = [new_x, new_y]
+        self.attempt_move(dx, dy, env)
 
     def random_move(self, env):
         """Kies een willekeurige geldige richting."""
@@ -69,6 +53,30 @@ class Agent:
         if valid_moves:
             # We zetten .tolist() erachter omdat env.rng.choice een numpy array teruggeeft
             self.position = env.rng.choice(valid_moves).tolist()
+
+    def attempt_move(self, dx, dy, env):
+        """
+        Probeert te bewegen in de gekozen richting. 
+        Als we tegen een muur botsen, proberen we erlangs te sliden.
+        """
+        new_x = self.position[0] + dx
+        new_y = self.position[1] + dy
+
+        # Plan A: De ideale, directe route is vrij.
+        if env.is_valid_position(new_x, new_y):
+            self.position = [new_x, new_y]
+        
+        # Plan B: Schuif langs de X-as (bv. ren omhoog/omlaag langs de muur)
+        elif env.is_valid_position(self.position[0], new_y):
+            self.position = [self.position[0], new_y]
+            
+        # Plan C: Schuif langs de Y-as (bv. ren links/rechts langs de muur)
+        elif env.is_valid_position(new_x, self.position[1]):
+            self.position = [new_x, self.position[1]]
+            
+        # Plan D: Zitten we helemaal vast in een hoekje? Doe een willekeurige stap.
+        else:
+            self.random_move(env)
 
     def step(self, env):
         """
