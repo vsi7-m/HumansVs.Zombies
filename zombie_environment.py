@@ -29,6 +29,7 @@ class ZombieEnvironment:
             "betrayals": [],
             "avg_trust": []
         }
+        self.new_infections_this_tick = 0
 
     def add_agent(self, agent, agent_type):
         """Voegt een agent toe aan de simulatie."""
@@ -78,6 +79,7 @@ class ZombieEnvironment:
         Voert één tick van de simulatie. (Sense-Think-Act ipv 7-stappenplan uit onze analyse)
         """
         self.stats["ticks"] += 1
+        self.new_infections_this_tick = 0
 
         # Agents husselen zodat er geen order bias is
         all_agents = self.humans + self.zombies
@@ -97,6 +99,7 @@ class ZombieEnvironment:
         self.stats["humans_alive"].append(len(self.humans))
         self.stats["zombies_alive"].append(len(self.zombies))
         self.stats["warnings_sent"].append(len(self.current_warnings))
+        self.stats["new_infections"].append(self.new_infections_this_tick)
 
         total_trust = 0
         trust_links = 0

@@ -39,6 +39,7 @@ class ZombieAgent(Agent):
             if not target_human.infected:
                 target_human.infected = True
                 target_human.infection_timer = env.rng.integers(2, 5) # timer wordt random ingesteld op 2 tot 4 ticks
+                env.new_infections_this_tick += 1
                 #print("INFECTIE")
         elif self.state == ZombieState.CHASING:
             self.move_towards(target_human.position, env)

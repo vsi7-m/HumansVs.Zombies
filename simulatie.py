@@ -4,8 +4,10 @@ from agents.human_agent import HumanAgent
 
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
+import matplotlib.pyplot as plt
+import numpy as np
 
-def run_simulation(ticks=100, n_humans=20, n_zombies=1, seed=42):
+def run_simulation(ticks=100, n_humans=20, n_zombies=1, seed=42, zombie_detection_radius=5,human_communication_radius=10):
     """
     Runt een volledige simulatie van Zombie vs. Humans.
     """
@@ -14,13 +16,13 @@ def run_simulation(ticks=100, n_humans=20, n_zombies=1, seed=42):
     # Voeg humans toe
     for i in range(n_humans):
         start_pos = [env.rng.integers(0, env.width), env.rng.integers(0, env.height)]
-        human = HumanAgent(agent_id=f"H{i}", start_position=start_pos, speed=1)
+        human = HumanAgent(agent_id=f"H{i}", start_position=start_pos, speed=1,  communication_radius=human_communication_radius)
         env.add_agent(human, 'human')
         
     # Voeg zombies toe
     for i in range(n_zombies):
         start_pos = [env.rng.integers(0, env.width), env.rng.integers(0, env.height)]
-        zombie = ZombieAgent(agent_id=f"Z{i}", start_position=start_pos, speed=1)
+        zombie = ZombieAgent(agent_id=f"Z{i}", start_position=start_pos, speed=1, detection_radius=zombie_detection_radius)
         env.add_agent(zombie, 'zombie')
         
     # Draai de simulatieloop
@@ -35,6 +37,40 @@ def run_simulation(ticks=100, n_humans=20, n_zombies=1, seed=42):
             
     print("Simulatie voltooid!")
     return env.stats
+
+def experiment_detectieradius():
+    detectieradiussen =[0,2,4,6,8,10,12,15,20]
+    aantal_runs=50
+    ticks=100
+
+    gem_infectiesnelheden=[]
+    for radius in detectieradiussen:
+        infectiesnelheden=[]
+        for seed in range(aantal_runs):
+            stats=run_simulation(ticks=ticks,n_humans=20,n_zombies=1,seed=seed,zombie_detection_radius=radius)
+            
+            totaal_nieuwe_infecties=sum(stats["new_infections"])
+            infectiesnelheid=totaal_nieuwe_infecties/ticks
+            infectiesnelheden.append(infectiesnelheid)
+
+        gem=np.mean(infectiesnelheden)
+        gem_infectiesnelheden.append(gem)
+
+        print(f"Detectieradius {radius}: gemiddelde infectiesnelheid = {gem:.2f}")
+
+    plt.figure(figsize=(8, 5))
+    plt.plot(detectieradiussen, gem_infectiesnelheden, marker="o")
+    plt.xlabel("Detectieradius van zombies")
+    plt.ylabel("Gemiddeld aantal nieuwe infecties per tick")
+    plt.title("Effect van detectieradius op infectiesnelheid")
+    plt.grid(True)
+    plt.tight_layout()
+    plt.savefig("grafiek_detectieradius.png", dpi=300)
+    print("Grafiek opgeslagen als grafiek_detectieradius.png")
+    plt.show()
+
+    
+
 
 def run_visual_simulation(ticks=100, n_humans=20, n_zombies=2, seed=42):
     """
@@ -124,7 +160,7 @@ def run_visual_simulation(ticks=100, n_humans=20, n_zombies=2, seed=42):
 if __name__ == "__main__":
 
     # OPTIE 1: visualisatie
-    run_visual_simulation(ticks=50, n_humans=30, n_zombies=2, seed=42)
+    experiment_detectieradius()
 
     # OPTIE 2: geen visualisatie
     #experiment_data = run_simulation(ticks=50, n_humans=30, n_zombies=2, seed=42)
