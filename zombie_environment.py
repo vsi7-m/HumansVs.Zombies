@@ -1,5 +1,7 @@
 import numpy as np
+
 from agents.zombie_agent import ZombieAgent
+from agents.trust_relation import TrustRelation
 
 class ZombieEnvironment:
     """
@@ -15,9 +17,9 @@ class ZombieEnvironment:
         self.humans = []
         self.zombies = []
 
-        self.current_warnings = [] # waarschuwingen
+        self.current_warnings = [] # waarschuwingen van mens tot mens
 
-        # Statistieken
+        # Statistieken naar array
         self.stats = {
             "ticks": 0,
             "humans_alive": [],
@@ -90,7 +92,7 @@ class ZombieEnvironment:
 
     def record_statistics(self):
         """
-        Berekent en bewaart de statistieken van de huidige tick voor latere analyse.
+        Berekent en bewaart de statistieken van de huidige tick.
         """
         self.stats["humans_alive"].append(len(self.humans))
         self.stats["zombies_alive"].append(len(self.zombies))
@@ -99,8 +101,8 @@ class ZombieEnvironment:
         total_trust = 0
         trust_links = 0
         for h in self.humans:
-            for t_val in h.trust.values():
-                total_trust += t_val
+            for relation in h.trust_relations:
+                total_trust += relation.score
                 trust_links += 1
                 
         avg_trust = total_trust / trust_links if trust_links > 0 else 0
@@ -108,7 +110,7 @@ class ZombieEnvironment:
 
     def convert_to_zombie(self, human):
         """
-        Zet een HumanAgent om in een ZombieAgent na een succesvolle infectie.
+        Zet een HumanAgent om in een ZombieAgent na een infectie.
         """
         if human in self.humans:
             self.humans.remove(human)

@@ -1,6 +1,9 @@
 from agents.agent import Agent
+from agents.trust_relation import TrustRelation
 
-class HumanState:
+from enum import Enum
+
+class HumanState(Enum): # beter enum
     WANDERING = "Wandering"
     GROUPING = "Grouping"
     FLEEING = "Fleeing"
@@ -16,7 +19,7 @@ class HumanAgent(Agent):
         self.communication_radius = communication_radius
         self.grouping_radius = grouping_radius
         
-        self.trust = {}
+        self.trust_relations =[]
         self.trust_threshold = trust_threshold
         self.group_members = set()
         self.betrayal_probability = betrayal_probability
@@ -37,11 +40,11 @@ class HumanAgent(Agent):
             self.infection_timer -= 1
             if self.infection_timer <= 0:
                 if env.rng.random() < self.p_zombification:
-                    print("TRANSFORMATIE")
+                    #print("TRANSFORMATIE")
                     env.convert_to_zombie(self)
                     return # De human is nu een zombie
                 else:
-                    print("HERSTEL")
+                    #print("HERSTEL")
                     self.infected = False
 
         # SENSE
@@ -76,14 +79,28 @@ class HumanAgent(Agent):
             else:
                 self.random_move(env)
 
-    def process_warnings(self, env):
+    def get_trust_relation(self, target_id):
+        """
+        Zoekt het vertrouwens-object op voor een specifieke agent.
+        Als ze elkaar nog niet kennen, wordt er een nieuwe relatie aangemaakt.
+        """
+        for relation in self.trust_relations:
+            if relation.target_id == target_id:
+                return relation
+        
+        # Nog geen relatie gevonden? Maak een nieuwe aan en voeg toe aan de lijst.
+        new_relation = TrustRelation(target_id)
+        self.trust_relations.append(new_relation)
+        return new_relation
+
+    def process_warnings(self, env): # beter trust in klasse steken ipv dictionary of een named tuple
         """Ontvangers verhogen de trust-score van de afzender met 1"""
         warnings = env.get_warnings(self.position)
         for w in warnings:
             sender_id = w["sender_id"]
             if sender_id != self.id:
-                # trust[sender_id] += 1
-                self.trust[sender_id] = self.trust.get(sender_id, 0) + 1
+                relation = self.get_trust_relation(sender_id)
+                relation.increase()
 
     def update_group_status(self, nearby_humans):
         """
@@ -96,7 +113,8 @@ class HumanAgent(Agent):
         # Regel 2: 1 vertrouwde human dichtbij = vertrouwd duo, telt ook als groep
         elif len(nearby_humans) == 1:
             other_human = nearby_humans[0]
-            if self.trust.get(other_human.id, 0) >= self.trust_threshold:
+            relation = self.get_trust_relation(other_human.id)
+            if relation.is_trusted(self.trust_threshold):
                 self.group_members.add(other_human)
 
     def has_received_warnings(self, env):
@@ -132,7 +150,8 @@ class HumanAgent(Agent):
                     continue
                 
                 # Verraad kan niet als er voldoende vertrouwen is
-                if self.trust.get(victim.id, 0) >= self.trust_threshold:
+                relation = self.get_trust_relation(victim.id)
+                if relation.is_trusted(self.trust_threshold):
                     continue
                 
                 # Een kleine random kans moet slagen
@@ -140,7 +159,7 @@ class HumanAgent(Agent):
                     
                     # VERRAAD SLAAGT!
                     # Slachtoffer wordt richting de zombie geduwd
-                    print("VERRAAD")
+                    #print("VERRAAD")
                     victim.move_towards(flee_from_position, env)
                     self.move_away_from(flee_from_position, env)
                     

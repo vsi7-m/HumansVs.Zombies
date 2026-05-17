@@ -28,7 +28,7 @@ def run_simulation(ticks=100, n_humans=20, n_zombies=1, seed=42):
         
         # Print elke 10 ticks een korte statusupdate
         if t % 10 == 0:
-            print(f"Tick {t}: {len(env.humans)} Humans, {len(env.zombies)} Zombies. Avg Trust: {env.stats['avg_trust'][-1]:.2f}")
+            print(f"Tick {t}: {len(env.humans)} Humans, {len(env.zombies)} Zombies. Avg Trust: {env.stats['avg_trust'][-1]:.2f}, Waarschuwingen: {env.stats['warnings_sent'][-1]}")
             
     print("Simulatie voltooid!")
     return env.stats
