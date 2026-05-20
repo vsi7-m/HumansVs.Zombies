@@ -4,7 +4,6 @@ from agents.human_agent import HumanAgent
 
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
-import matplotlib.pyplot as plt
 import numpy as np
 
 def run_simulation(ticks=100, n_humans=20, n_zombies=1, seed=42, zombie_detection_radius=5,human_communication_radius=10):
@@ -68,9 +67,6 @@ def experiment_detectieradius():
     plt.savefig("grafiek_detectieradius.png", dpi=300)
     print("Grafiek opgeslagen als grafiek_detectieradius.png")
     plt.show()
-
-    
-
 
 def run_visual_simulation(ticks=100, n_humans=20, n_zombies=2, seed=42):
     """
@@ -160,7 +156,10 @@ def run_visual_simulation(ticks=100, n_humans=20, n_zombies=2, seed=42):
 if __name__ == "__main__":
 
     # OPTIE 1: visualisatie
-    experiment_detectieradius()
+    run_visual_simulation(ticks=100, n_humans=30, n_zombies=2, seed=42)
 
     # OPTIE 2: geen visualisatie
     #experiment_data = run_simulation(ticks=50, n_humans=30, n_zombies=2, seed=42)
+
+    # OPTIE 3: grafieken maken
+    #experiment_detectieradius()
