@@ -2,6 +2,7 @@ import numpy as np
 
 from agents.zombie_agent import ZombieAgent
 from agents.trust_relation import TrustRelation
+from agents.human_agent import HumanState  # GRAF
 
 class ZombieEnvironment:
     """
@@ -26,10 +27,12 @@ class ZombieEnvironment:
             "zombies_alive": [],
             "new_infections": [],
             "warnings_sent": [],
-            "betrayals": [],
+            "betrayals": [],          # GRAF
+            "humans_in_group": [],    # GRAF
             "avg_trust": []
         }
         self.new_infections_this_tick = 0
+        self.new_betrayals_this_tick = 0  # GRAF
 
     def add_agent(self, agent, agent_type):
         """Voegt een agent toe aan de simulatie."""
@@ -80,6 +83,7 @@ class ZombieEnvironment:
         """
         self.stats["ticks"] += 1
         self.new_infections_this_tick = 0
+        self.new_betrayals_this_tick = 0  # GRAF
 
         # Agents husselen zodat er geen order bias is
         all_agents = self.humans + self.zombies
@@ -100,6 +104,9 @@ class ZombieEnvironment:
         self.stats["zombies_alive"].append(len(self.zombies))
         self.stats["warnings_sent"].append(len(self.current_warnings))
         self.stats["new_infections"].append(self.new_infections_this_tick)
+        self.stats["betrayals"].append(self.new_betrayals_this_tick)  # GRAF
+        humans_in_group = sum(1 for h in self.humans if h.state == HumanState.GROUPING)  # GRAF
+        self.stats["humans_in_group"].append(humans_in_group)  # GRAF
 
         total_trust = 0
         trust_links = 0
@@ -125,4 +132,3 @@ class ZombieEnvironment:
             )
             
             self.zombies.append(new_zombie)
-

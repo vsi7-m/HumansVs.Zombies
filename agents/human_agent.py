@@ -66,8 +66,7 @@ class HumanAgent(Agent):
         if self.state == HumanState.FLEEING:
             # Waarschuw anderen als je ZELF een zombie ziet
             if visible_zombies:
-                closest_zombie = visible_zombies[0]
-                env.add_warning(self.id, closest_zombie.position, self.communication_radius)
+                env.add_warning(self.id, self.position, self.communication_radius)  # GRAF
             self.flee_or_betray(visible_zombies, nearby_humans, env)
             
         elif self.state == HumanState.GROUPING:
@@ -160,6 +159,7 @@ class HumanAgent(Agent):
                     # VERRAAD SLAAGT!
                     # Slachtoffer wordt richting de zombie geduwd
                     #print("VERRAAD")
+                    env.new_betrayals_this_tick += 1  # GRAF
                     victim.move_towards(flee_from_position, env)
                     self.move_away_from(flee_from_position, env)
                     
