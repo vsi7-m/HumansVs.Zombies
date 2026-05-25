@@ -1,18 +1,17 @@
 from agents.agent import Agent
 from agents.trust_relation import TrustRelation
-
 from enum import Enum
 
-class HumanState(Enum): # beter enum
+class HumanState(Enum):
     WANDERING = "Wandering"
     GROUPING = "Grouping"
     FLEEING = "Fleeing"
 
 class HumanAgent(Agent):
+    """Simuleert een mens in de Zombie Environment."""
     def __init__(self, agent_id, start_position, speed=1, 
                  vision_radius=7, communication_radius=10, grouping_radius=2, 
                  trust_threshold=3, betrayal_probability=0.05, p_zombification=0.90):
-        # Initialiseer de basis Agent attributen (id, position, speed)
         super().__init__(agent_id, start_position, speed)
         
         self.vision_radius = vision_radius
@@ -32,6 +31,7 @@ class HumanAgent(Agent):
         self.is_active = True
 
     def step(self, env):
+        """Voert de Sense-Think-Act cyclus uit voor deze specifieke agent."""
         if not self.is_active:
             return
         
@@ -40,20 +40,18 @@ class HumanAgent(Agent):
             self.infection_timer -= 1
             if self.infection_timer <= 0:
                 if env.rng.random() < self.p_zombification:
-                    #print("TRANSFORMATIE")
                     env.convert_to_zombie(self)
-                    return # De human is nu een zombie
+                    return # De human is nu een zombie, beëindig de beurt
                 else:
-                    #print("HERSTEL")
-                    self.infected = False
+                    self.infected = False # Agent herstelt
 
         # SENSE
-        self.process_warnings(env) # Trust update
+        self.process_warnings(env)
         visible_zombies = env.get_nearby_zombies(self.position, self.vision_radius)
         nearby_humans = env.get_nearby_humans(self.position, self.grouping_radius, exclude_agent=self)
         
         # THINK
-        self.update_group_status(nearby_humans) # Vul self.group_members
+        self.update_group_status(nearby_humans)
 
         if visible_zombies or self.has_received_warnings(env):
             self.state = HumanState.FLEEING
@@ -66,7 +64,7 @@ class HumanAgent(Agent):
         if self.state == HumanState.FLEEING:
             # Waarschuw anderen als je ZELF een zombie ziet
             if visible_zombies:
-                env.add_warning(self.id, self.position, self.communication_radius)  # GRAF
+                env.add_warning(self.id, self.position, self.communication_radius)
             self.flee_or_betray(visible_zombies, nearby_humans, env)
             
         elif self.state == HumanState.GROUPING:
@@ -78,22 +76,22 @@ class HumanAgent(Agent):
             else:
                 self.random_move(env)
 
+    # =========================================
+    # HULPFUNCTIES VOOR SOCIAAL GEDRAG & TRUST
+    # =========================================
+
     def get_trust_relation(self, target_id):
-        """
-        Zoekt het vertrouwens-object op voor een specifieke agent.
-        Als ze elkaar nog niet kennen, wordt er een nieuwe relatie aangemaakt.
-        """
+        """Zoekt of maakt een vertrouwensband met een andere agent."""
         for relation in self.trust_relations:
             if relation.target_id == target_id:
                 return relation
-        
-        # Nog geen relatie gevonden? Maak een nieuwe aan en voeg toe aan de lijst.
+
         new_relation = TrustRelation(target_id)
         self.trust_relations.append(new_relation)
         return new_relation
 
-    def process_warnings(self, env): # beter trust in klasse steken ipv dictionary of een named tuple
-        """Ontvangers verhogen de trust-score van de afzender met 1"""
+    def process_warnings(self, env):
+        """Verhoogt het vertrouwen in agents die waarschuwingen sturen."""
         warnings = env.get_warnings(self.position)
         for w in warnings:
             sender_id = w["sender_id"]
@@ -102,13 +100,13 @@ class HumanAgent(Agent):
                 relation.increase()
 
     def update_group_status(self, nearby_humans):
-        """
-        Vult de set met groepsleden
-        """
+        """Bepaalt of de agent zich veilig genoeg voelt om een groep te vormen."""
         self.group_members.clear()
+        
         # Regel 1: 2 andere humans dichtbij = echte groep (samen met zichzelf zijn dat er 3)
         if len(nearby_humans) >= 2:
             self.group_members.update(nearby_humans)
+        
         # Regel 2: 1 vertrouwde human dichtbij = vertrouwd duo, telt ook als groep
         elif len(nearby_humans) == 1:
             other_human = nearby_humans[0]
@@ -117,53 +115,49 @@ class HumanAgent(Agent):
                 self.group_members.add(other_human)
 
     def has_received_warnings(self, env):
-        """Controleert of er waarschuwingen zijn binnengekomen in de observeren fase."""
+        """Controleert of er waarschuwingen zijn."""
         return len(env.get_warnings(self.position)) > 0
+    
+    # ========================================
+    # HULPFUNCTIES VOOR BEWEGING & OVERLEVING
+    # ========================================
 
     def flee_or_betray(self, visible_zombies, nearby_humans, env):
-        """
-        Vlucht weg van het gevaar of verraad een ander tijdens paniek om zelf te overleven.
-        """
+        """Vlucht voor het gevaar of verraad een ander tijdens paniek om zelf te overleven."""
         flee_from_position = None
         zombie_is_close = len(visible_zombies) > 0
 
+        # Bepaal de oorsprong van gevaar
         if zombie_is_close:
-            closest_zombie = visible_zombies[0]
-            flee_from_position = closest_zombie.position
+            flee_from_position = visible_zombies[0].position
         else:
-            # Als er geen zombie is, vluchten we weg van een ontvangen waarschuwing
             warnings = env.get_warnings(self.position)
             if warnings:
                 flee_from_position = warnings[0]["position"]
 
         if not flee_from_position:
-            return  # Geen gevaar gevonden, doe niets
+            return 
 
         # PANIEK REGEL: VERRAAD
         # Kan alleen als er een zombie dichtbij is en de verrader niet in een groep zit
         if zombie_is_close and not self.group_members:
-
             for victim in nearby_humans:
-                # Het slachtoffer mag ook niet in een groep zitten
+                # Slachtoffer mag niet in een groep zitten en mag geen vriend zijn
                 if victim.group_members:
                     continue
                 
-                # Verraad kan niet als er voldoende vertrouwen is
                 relation = self.get_trust_relation(victim.id)
                 if relation.is_trusted(self.trust_threshold):
                     continue
                 
-                # Een kleine random kans moet slagen
+                # Het verraad heeft een kleine kans van slagen
                 if env.rng.random() <= self.betrayal_probability:
-                    
-                    # VERRAAD SLAAGT!
-                    # Slachtoffer wordt richting de zombie geduwd
-                    #print("VERRAAD")
-                    env.new_betrayals_this_tick += 1  # GRAF
+                    env.new_betrayals_this_tick += 1
+
+                    # Duw slachtoffer en vlucht
                     victim.move_towards(flee_from_position, env)
                     self.move_away_from(flee_from_position, env)
-                    
-                    return # Actie is uitgevoerd, stop met zoeken naar slachtoffers
+                    return
 
         self.move_away_from(flee_from_position, env) # Vlucht wanneer verraad niet lukt
 
@@ -174,7 +168,6 @@ class HumanAgent(Agent):
         total_x = self.position[0]
         total_y = self.position[1]
         
-        # Tel de coördinaten van alle andere groepsleden bij de eigen coördinaten.
         for member in self.group_members:
             total_x += member.position[0]
             total_y += member.position[1]

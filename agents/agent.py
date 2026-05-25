@@ -12,7 +12,7 @@ class Agent:
         self.state = None  # Wordt specifiek ingevuld door Zombie of Human
 
     def move_towards(self, target_position, env):
-        """Beweeg in de richting van een specifiek coördinaat."""
+        """Berekent de kortste route in 8 richtingen naar een doelwit."""
         dx = 0
         if target_position[0] > self.position[0]: dx = self.speed
         elif target_position[0] < self.position[0]: dx = -self.speed
@@ -24,7 +24,7 @@ class Agent:
         self.attempt_move(dx, dy, env)
 
     def move_away_from(self, threat_position, env):
-        """Beweegt de agent weg van een coördinaat (zoals een zombie)."""
+        """Berekent de directe route (andere kant op) van een gevaar."""
         dx = 0
         if threat_position[0] > self.position[0]: dx = -self.speed
         elif threat_position[0] < self.position[0]: dx = self.speed
@@ -36,7 +36,7 @@ class Agent:
         self.attempt_move(dx, dy, env)
 
     def random_move(self, env):
-        """Kies een willekeurige geldige richting."""
+        """Kies een willekeurige geldige stap. (wandering)"""
         valid_moves = []
         for dx in range(-self.speed, self.speed + 1):
             for dy in range(-self.speed, self.speed + 1):
@@ -62,7 +62,7 @@ class Agent:
         new_x = self.position[0] + dx
         new_y = self.position[1] + dy
 
-        # Plan A: De ideale, directe route is vrij.
+        # Plan A: De directe route is vrij
         if env.is_valid_position(new_x, new_y):
             self.position = [new_x, new_y]
         
@@ -74,7 +74,7 @@ class Agent:
         elif env.is_valid_position(new_x, self.position[1]):
             self.position = [new_x, self.position[1]]
             
-        # Plan D: Zitten we helemaal vast in een hoekje? Doe een willekeurige stap.
+        # Plan D: Zitten we helemaal vast in een hoekje? Doe een willekeurige stap
         else:
             self.random_move(env)
 

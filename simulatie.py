@@ -1,18 +1,39 @@
+import numpy as np
+import matplotlib.pyplot as plt
+import matplotlib.animation as animation
+
 from zombie_environment import ZombieEnvironment
 from agents.zombie_agent import ZombieAgent
 from agents.human_agent import HumanAgent
 
-import matplotlib.pyplot as plt
-import matplotlib.animation as animation
-import numpy as np
+# ==========================================
+# ALGEMENE CONFIGURATIE & GLOBALE VARIABELEN
+# ==========================================
+
+# Definieer de twee omgevingen voor de experimenten
+GRID_CONFIGS = [
+    {"width": 30,  "height": 30,  "n_humans": 20, "n_zombies": 1, "label": "30x30"},
+    {"width": 100, "height": 100, "n_humans": 50, "n_zombies": 2, "label": "100x100"},
+]
+
+# Kleurschema's voor de grafieken
+KLEUREN_DETECTIE     = ["red",    "darkred"]
+KLEUREN_COMMUNICATIE = ["blue",   "darkblue"]
+KLEUREN_GROEP        = ["green",  "darkgreen"]
+KLEUREN_VERRAAD      = ["orange", "darkorange"]
+
+# =================
+# SIMULATIE RUNNER
+# =================
 
 def run_simulation(ticks=100, n_humans=20, n_zombies=1, seed=42,
                    zombie_detection_radius=5, human_communication_radius=10,
-                   width=30, height=30):  # GRAF
+                   width=30, height=30):
     """
-    Runt een volledige simulatie van Zombie vs. Humans.
+    Runt een volledige, onzichtbare simulatie.
+    Wordt gebruikt door de experiment-functies om snel data te genereren.
     """
-    env = ZombieEnvironment(width=width, height=height, seed=seed)  # GRAF
+    env = ZombieEnvironment(width=width, height=height, seed=seed)
 
     # Voeg humans toe
     for i in range(n_humans):
@@ -32,24 +53,12 @@ def run_simulation(ticks=100, n_humans=20, n_zombies=1, seed=42,
 
     return env.stats
 
-# GRAF
-GRID_CONFIGS = [
-    {"width": 30,  "height": 30,  "n_humans": 20, "n_zombies": 1, "label": "30×30"},
-    {"width": 100, "height": 100, "n_humans": 50, "n_zombies": 2, "label": "100×100"},
-]
+# ===================================
+# EXPERIMENTEN & GRAFIEKEN GENEREREN
+# ===================================
 
-# GRAF
-KLEUREN_DETECTIE     = ["red",    "darkred"]
-KLEUREN_COMMUNICATIE = ["blue",   "darkblue"]
-KLEUREN_GROEP        = ["green",  "darkgreen"]
-KLEUREN_VERRAAD      = ["orange", "darkorange"]
-
-
-# ─────────────────────────────────────────────────────────────────────────────
-# EXPERIMENT 1: Effect van DETECTIERADIUS op infectiesnelheid
-# GRAF
-# ─────────────────────────────────────────────────────────────────────────────
 def experiment_detectieradius():
+    """Test de impact van de detectieradius van zombies op de infectiesnelheid."""
     detectieradiussen = [0, 2, 4, 6, 8, 10, 12, 15, 20]
     aantal_runs = 50
     ticks = 100
@@ -59,6 +68,7 @@ def experiment_detectieradius():
     for cfg, kleur in zip(GRID_CONFIGS, KLEUREN_DETECTIE):
         print(f"\n  Grid {cfg['label']}:")
         gem_infectiesnelheden = []
+        std_infectiesnelheden = []
         for radius in detectieradiussen:
             infectiesnelheden = []
             for seed in range(aantal_runs):
@@ -68,12 +78,26 @@ def experiment_detectieradius():
                     width=cfg["width"], height=cfg["height"]
                 )
                 infectiesnelheden.append(sum(stats["new_infections"]) / ticks)
+
+            # Bereken het gemiddelde
             gem = np.mean(infectiesnelheden)
             gem_infectiesnelheden.append(gem)
-            print(f"    Radius {radius:2d}: {gem:.3f}")
 
-        plt.plot(detectieradiussen, gem_infectiesnelheden,
-                 marker="o", color=kleur, label=cfg["label"])
+            # Bereken de standaardafwijking
+            std = np.std(infectiesnelheden)
+            std_infectiesnelheden.append(std)
+            print(f"    Radius {radius:2d}: Gemiddelde {gem:.3f} (Spreiding ±{std:.3f})")
+        
+        # Converteer naar numpy arrays voor makkelijk rekenwerk in de grafiek
+        x = np.array(detectieradiussen)
+        y = np.array(gem_infectiesnelheden)
+        foutmarge = np.array(std_infectiesnelheden)
+        
+        # Teken de normale lijn
+        plt.plot(x, y, marker="o", color=kleur, label=cfg["label"])
+        
+        # Teken het betrouwbaarheidsinterval
+        plt.fill_between(x, y - foutmarge, y + foutmarge, color=kleur, alpha=0.2)
 
     plt.xlabel("Detectieradius van zombies")
     plt.ylabel("Gemiddeld aantal nieuwe infecties per tick")
@@ -85,12 +109,8 @@ def experiment_detectieradius():
     print("Grafiek opgeslagen als grafiek_detectieradius.png")
     plt.close()
 
-
-# ─────────────────────────────────────────────────────────────────────────────
-# EXPERIMENT 2: Effect van COMMUNICATIERADIUS op infectiesnelheid
-# GRAF
-# ─────────────────────────────────────────────────────────────────────────────
 def experiment_communicatieradius():
+    """Test de impact van de communicatieradius van humans op de infectiesnelheid."""
     communicatieradiussen = [0, 2, 4, 6, 8, 10, 12, 15, 20]
     aantal_runs = 50
     ticks = 100
@@ -102,6 +122,7 @@ def experiment_communicatieradius():
         gem_infectiesnelheden = []
         for radius in communicatieradiussen:
             infectiesnelheden = []
+            std_infectiesnelheden = []
             for seed in range(aantal_runs):
                 stats = run_simulation(
                     ticks=ticks, n_humans=cfg["n_humans"], n_zombies=cfg["n_zombies"],
@@ -109,12 +130,21 @@ def experiment_communicatieradius():
                     width=cfg["width"], height=cfg["height"]
                 )
                 infectiesnelheden.append(sum(stats["new_infections"]) / ticks)
+            # Bereken het gemiddelde
             gem = np.mean(infectiesnelheden)
             gem_infectiesnelheden.append(gem)
-            print(f"    Radius {radius:2d}: {gem:.3f}")
 
-        plt.plot(communicatieradiussen, gem_infectiesnelheden,
-                 marker="o", color=kleur, label=cfg["label"])
+            # Bereken de standaardafwijking
+            std = np.std(infectiesnelheden)
+            std_infectiesnelheden.append(std)
+            print(f"    Radius {radius:2d}: {gem:.3f} (±{std:.3f})")
+
+        x = np.array(communicatieradiussen)
+        y = np.array(gem_infectiesnelheden)
+        marge = np.array(std_infectiesnelheden)
+
+        plt.plot(x, y, marker="o", color=kleur, label=cfg["label"])
+        plt.fill_between(x, y - marge, y + marge, color=kleur, alpha=0.2)
 
     plt.xlabel("Communicatieradius van humans")
     plt.ylabel("Gemiddeld aantal nieuwe infecties per tick")
@@ -126,12 +156,8 @@ def experiment_communicatieradius():
     print("Grafiek opgeslagen als grafiek_communicatieradius.png")
     plt.close()
 
-
-# ─────────────────────────────────────────────────────────────────────────────
-# EXPERIMENT 3: Effect van COMMUNICATIERADIUS op GROEPSVORMING
-# GRAF
-# ─────────────────────────────────────────────────────────────────────────────
 def experiment_groepsvorming_communicatieradius():
+    """Test of een grotere communicatieradius leidt tot meer groepsvorming."""
     communicatieradiussen = [0, 2, 4, 6, 8, 10, 12, 15, 20]
     aantal_runs = 50
     ticks = 100
@@ -141,6 +167,7 @@ def experiment_groepsvorming_communicatieradius():
     for cfg, kleur in zip(GRID_CONFIGS, KLEUREN_GROEP):
         print(f"\n  Grid {cfg['label']}:")
         gem_fractions = []
+        std_fractions = []
         for radius in communicatieradiussen:
             fractions = []
             for seed in range(aantal_runs):
@@ -157,16 +184,22 @@ def experiment_groepsvorming_communicatieradius():
                 if tick_fractions:
                     fractions.append(np.mean(tick_fractions))
             gem = np.mean(fractions) if fractions else 0.0
+            std = np.std(fractions) if fractions else 0.0
             gem_fractions.append(gem)
-            print(f"    Radius {radius:2d}: {gem:.3f}")
+            std_fractions.append(std)
+            print(f"    Radius {radius:2d}: {gem:.3f} (±{std:.3f})")
 
-        plt.plot(communicatieradiussen, gem_fractions,
-                 marker="o", color=kleur, label=cfg["label"])
+        x = np.array(communicatieradiussen)
+        y = np.array(gem_fractions)
+        marge = np.array(std_fractions)
+
+        plt.plot(x, y, marker="o", color=kleur, label=cfg["label"])
+        plt.fill_between(x, y - marge, y + marge, color=kleur, alpha=0.2)
 
     plt.xlabel("Communicatieradius van humans")
-    plt.ylabel("Gemiddelde fractie humans in GROUPING state")
+    plt.ylabel("Gemiddelde aantal humans in GROUPING state")
     plt.title("Effect van communicatieradius op groepsvorming")
-    plt.ylim(0, 1)
+    plt.ylim(0, 1) # Groepsvorming is een percentage (0 tot 100%)
     plt.legend()
     plt.grid(True)
     plt.tight_layout()
@@ -174,12 +207,8 @@ def experiment_groepsvorming_communicatieradius():
     print("Grafiek opgeslagen als grafiek_groepsvorming_communicatieradius.png")
     plt.close()
 
-
-# ─────────────────────────────────────────────────────────────────────────────
-# EXPERIMENT 4: Effect van COMMUNICATIERADIUS op VERRAAD
-# GRAF
-# ─────────────────────────────────────────────────────────────────────────────
 def experiment_verraad_communicatieradius():
+    """Test of waarschuwingen het percentage verraad verlaagt."""
     communicatieradiussen = [0, 2, 4, 6, 8, 10, 12, 15, 20]
     aantal_runs = 50
     ticks = 100
@@ -189,6 +218,7 @@ def experiment_verraad_communicatieradius():
     for cfg, kleur in zip(GRID_CONFIGS, KLEUREN_VERRAAD):
         print(f"\n  Grid {cfg['label']}:")
         gem_verraden = []
+        std_verraden = []
         for radius in communicatieradiussen:
             verraden_per_run = []
             for seed in range(aantal_runs):
@@ -199,11 +229,17 @@ def experiment_verraad_communicatieradius():
                 )
                 verraden_per_run.append(sum(stats["betrayals"]) / ticks)
             gem = np.mean(verraden_per_run)
+            std = np.std(verraden_per_run)
             gem_verraden.append(gem)
-            print(f"    Radius {radius:2d}: {gem:.4f}")
+            std_verraden.append(std)
+            print(f"    Radius {radius:2d}: {gem:.4f} (±{std:.4f})")
 
-        plt.plot(communicatieradiussen, gem_verraden,
-                 marker="o", color=kleur, label=cfg["label"])
+        x = np.array(communicatieradiussen)
+        y = np.array(gem_verraden)
+        marge = np.array(std_verraden)
+
+        plt.plot(x, y, marker="o", color=kleur, label=cfg["label"])
+        plt.fill_between(x, y - marge, y + marge, color=kleur, alpha=0.2)
 
     plt.xlabel("Communicatieradius van humans")
     plt.ylabel("Gemiddeld aantal verraden per tick")
@@ -215,10 +251,13 @@ def experiment_verraad_communicatieradius():
     print("Grafiek opgeslagen als grafiek_verraad_communicatieradius.png")
     plt.close()
 
+# =================
+# VISUELE SIMULATIE 
+# =================
 
 def run_visual_simulation(ticks=100, n_humans=20, n_zombies=2, seed=42):
     """
-    Runt een visuele simulatie
+    Runt een visuele simulatie met Matplotlib animatie.
     """
     env = ZombieEnvironment(width=30, height=30, seed=seed)
 
@@ -246,11 +285,13 @@ def run_visual_simulation(ticks=100, n_humans=20, n_zombies=2, seed=42):
         ax.set_xticklabels([])
         ax.set_yticklabels([])
 
+        # Teken Zombies
         if env.zombies:
             zx = [z.position[0] for z in env.zombies]
             zy = [z.position[1] for z in env.zombies]
             ax.scatter(zx, zy, color='red', s=80, label='Zombies', zorder=5)
 
+        # Teken Humans + Groepen
         if env.humans:
             hx_wandering, hy_wandering, hx_group, hy_group = [], [], [], []
             for h in env.humans:
@@ -261,10 +302,11 @@ def run_visual_simulation(ticks=100, n_humans=20, n_zombies=2, seed=42):
                     hx_wandering.append(h.position[0])
                     hy_wandering.append(h.position[1])
             if hx_wandering:
-                ax.scatter(hx_wandering, hy_wandering, color='blue', s=60, label='Humans (alleen)')
+                ax.scatter(hx_wandering, hy_wandering, color='blue', s=60, alpha=0.5, label='Humans (alleen)', zorder=3)
             if hx_group:
-                ax.scatter(hx_group, hy_group, color='green', s=60, label='Humans (groep)')
+                ax.scatter(hx_group, hy_group, color='green', s=60, alpha=0.5, label='Humans (groep)', zorder=3)
 
+        # Teken Waarschuwingen
         if env.current_warnings:
             wx = [w["position"][0] for w in env.current_warnings]
             wy = [w["position"][1] for w in env.current_warnings]
@@ -277,19 +319,27 @@ def run_visual_simulation(ticks=100, n_humans=20, n_zombies=2, seed=42):
     plt.tight_layout()
     plt.show()
 
+# ====
+# Main
+# ====
 
 if __name__ == "__main__":
-    # GRAF
-    print("\n=== EXPERIMENT 1: Detectieradius vs. infectiesnelheid ===")
-    experiment_detectieradius()
+    # OPTIE 1: visualisatie
+    run_visual_simulation(ticks=100, n_humans=30, n_zombies=2, seed=None)
 
-    print("\n=== EXPERIMENT 2: Communicatieradius vs. infectiesnelheid ===")
-    experiment_communicatieradius()
+    # OPTIE 2: geen visualisatie
+    #test_data = run_simulation(ticks=100, n_humans=30, n_zombies=2, seed=42)
+    #print(test_data["new_infections"])
 
-    print("\n=== EXPERIMENT 3: Communicatieradius vs. groepsvorming ===")
-    experiment_groepsvorming_communicatieradius()
+    # OPTIE 3: experimenten
+    #print("EXPERIMENT 1: Detectieradius vs. infectiesnelheid")
+    #experiment_detectieradius()
 
-    print("\n=== EXPERIMENT 4: Communicatieradius vs. verraad ===")
-    experiment_verraad_communicatieradius()
+    #print("EXPERIMENT 2: Communicatieradius vs. infectiesnelheid")
+    #experiment_communicatieradius()
 
-    print("\nAlle grafieken opgeslagen!")
+    #print("EXPERIMENT 3: Communicatieradius vs. groepsvorming")
+    #experiment_groepsvorming_communicatieradius()
+
+    #print("EXPERIMENT 4: Communicatieradius vs. verraad")
+    #experiment_verraad_communicatieradius()
